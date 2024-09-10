@@ -39,10 +39,12 @@ def checkstraight(cards_vals_unique):
 placeholder_hand = [{'suit': 'Z', 'val': 0}, {'suit': 'Z', 'val': 0}, {'suit': 'Z', 'val': 0}, {'suit': 'Z', 'val': 0}, {'suit': 'Z', 'val': 0}, {'suit': 'Z', 'val': 0}, {'suit': 'Z', 'val': 0}]
 
 def highcard(cards = placeholder_hand):
+    cards = sorted(cards, key=lambda card: card['val'], reverse=True)
     return cards[0]['val']
 # print(f'highcard: {highcard(cards)}')
 
 def pair(cards = placeholder_hand, kickers_needed = True):
+    cards = sorted(cards, key=lambda card: card['val'], reverse=True)
     cards_vals = get_vals(cards)
     numcards = len(cards)
     for c in range(numcards-1):
@@ -55,6 +57,7 @@ def pair(cards = placeholder_hand, kickers_needed = True):
 # print(f'pair: {pair(cards)}')
 
 def twopair(cards = placeholder_hand, kickers_needed = True):
+    cards = sorted(cards, key=lambda card: card['val'], reverse=True)
     cards_vals = get_vals(cards)
     # if there is no pair there cannot be a twopair
     pairchecker = pair(cards, False)
@@ -76,6 +79,7 @@ def twopair(cards = placeholder_hand, kickers_needed = True):
 # print(f'two: {twopair(cards)}')
                 
 def trips(cards = placeholder_hand, kickers_needed = True):
+    cards = sorted(cards, key=lambda card: card['val'], reverse=True)
     cards_vals = get_vals(cards)
     numcards = len(cards)
     for c in range(numcards-2):
@@ -88,6 +92,7 @@ def trips(cards = placeholder_hand, kickers_needed = True):
 # print(f'trips: {trips(cards)}')
 
 def straight(cards = placeholder_hand):
+    cards = sorted(cards, key=lambda card: card['val'], reverse=True)
     cards_vals = get_vals(cards)
     cards_vals_unique = sorted(set(cards_vals), reverse = True)
     if checkstraight(cards_vals_unique) is not None:
@@ -102,6 +107,7 @@ def straight(cards = placeholder_hand):
 # print(f"straight: {straight(cards)}")
 
 def flush(cards = placeholder_hand, return_all_suited = False):
+    cards = sorted(cards, key=lambda card: card['val'], reverse=True)
     # Count occurence of each suit and store in dictionary
     suit_count = {'S': 0, 'H': 0, 'D': 0, 'C': 0}
     for card in cards:
@@ -121,6 +127,7 @@ def flush(cards = placeholder_hand, return_all_suited = False):
 # print(f"flush: {flush(cards)}")
 
 def full_house(cards = placeholder_hand):
+    cards = sorted(cards, key=lambda card: card['val'], reverse=True)
     tripchecker = trips(cards, kickers_needed = False)
     if tripchecker is None:
         return None
@@ -134,6 +141,7 @@ def full_house(cards = placeholder_hand):
 # print(f"full house: {full_house(cards)}")
             
 def quads(cards = placeholder_hand, kickers_needed = True):
+    cards = sorted(cards, key=lambda card: card['val'], reverse=True)
     cards_vals = get_vals(cards)
     numcards = len(cards)
     for c in range(numcards-3):
@@ -146,6 +154,7 @@ def quads(cards = placeholder_hand, kickers_needed = True):
 # print(f"quads: {quads(cards)}")
     
 def straight_flush(cards = placeholder_hand):
+    cards = sorted(cards, key=lambda card: card['val'], reverse=True)
     suited = flush(cards, return_all_suited = True)
     if suited is None:
         return None
@@ -160,6 +169,7 @@ def straight_flush(cards = placeholder_hand):
 # print(f"straight flush: {straight_flush(cards)}")
 
 def royal_flush(cards = placeholder_hand):
+    cards = sorted(cards, key=lambda card: card['val'], reverse=True)
     check_straight_flush = straight_flush(cards)
     if check_straight_flush is None:
         return None
@@ -222,7 +232,6 @@ def get_winners(players, return_idx = False, return_names = True):
 
 
 
-board_cards = []
 
 
 def create_winners(players):
@@ -248,66 +257,70 @@ def print_result(players, winners):
         print(f"{winners[0]} wins the hand with {hands_ranking_strings[get_winners(hands, return_idx = True)]} containing {get_winners(hands)[0]}")
     return 0
 
-def get_remaining_cards(players, board_cards):
+class DuplicateCardError(Exception):
+    pass
+
+def get_remaining_cards(players, board, return_used=False):
     full_deck = create_deck()
     
     # Flatten all hands into a single list
     cards_in_hands = [card for person in players for card in person["hand"]]
-    all_cards = cards_in_hands + board_cards
-    # print(f"all cards: {all_cards}")
+    all_cards = cards_in_hands + board
     
     # Check for duplicates
     seen_cards = set()
     for card in all_cards:
-        card_tuple = tuple(card.items())
+        card_tuple = (card['val'], card['suit'])  # Use a tuple for easier comparison
         if card_tuple in seen_cards:
-            print("Duplicate cards!")
-            exit()
+            raise DuplicateCardError
         seen_cards.add(card_tuple)
-    
-    # print(f"cards in hands: {cards_in_hands}")
-    # print(f"len cards in hands: {len(cards_in_hands)}")
+
+    if return_used:
+        used_cards = [card for card in full_deck if (card['val'], card['suit']) in seen_cards]
+        return used_cards
     
     # Filter out cards in hands from the full deck
-    remaining_deck = [card for card in full_deck if tuple(card.items()) not in seen_cards]
-    
+    remaining_deck = [card for card in full_deck if (card['val'], card['suit']) not in seen_cards]
     return remaining_deck
 
 
+    
 
-def create_final_hands(players, final_board_cards):
+
+
+def create_final_hands(players, final_board):
     final_hands = deepcopy(players)
     for player in final_hands:
-        for card in final_board_cards:
+        for card in final_board:
             player["hand"].append(card)
     return final_hands
     
         
 
 
-def calculate_equity(players, numiterations):
+def calculate_equity(players, board, numiterations):
     # Work out how many more cards are needed to add to the board
-    boardlen = len(board_cards)
+    boardlen = len(board)
     neededcards = 0
     if boardlen < 5:
         neededcards = 5 - boardlen
     # Check if initial board is valid
-    acceptedable_needed = [1, 2, 5]
+    acceptedable_needed = [0, 1, 2, 5]
     if neededcards not in acceptedable_needed:
         print("invalid board")
         exit()
 
-    remaining_deck = get_remaining_cards(players, board_cards)
+    remaining_deck = get_remaining_cards(players, board)
     winners_list = []
     original_remaining_deck = deepcopy(remaining_deck)
     for _ in range(numiterations):
         remaining_deck = deepcopy(original_remaining_deck)
         shuffle(remaining_deck)
         
-        final_board_cards = deepcopy(board_cards)
+        final_board = deepcopy(board)
         for _ in range(neededcards):
-            final_board_cards.append(remaining_deck.pop(0))
-        final_hands = create_final_hands(players, final_board_cards)
+            final_board.append(remaining_deck.pop(0))
+        final_hands = create_final_hands(players, final_board)
         winner = get_winners(final_hands)
         winners_list.append(winner)
     results_list = []
@@ -352,10 +365,11 @@ def take_input():
     }
     
 
-    checkinginputs = True
+    checking_player_inputs = True
     players = []
+    board = []
     cards_per_hand = 2
-    while checkinginputs:
+    while checking_player_inputs:
         cards_in_hand = 0
         print("Type stop or press enter when you have finished!")
         input_name = str(input("Please enter player name: "))
@@ -370,7 +384,7 @@ def take_input():
             input_val = input("Please enter a card value: ")
             if check_input_for_stop(input_val):
                 players = [player for player in players if player.get("name") != input_name]
-                checkinginputs = False
+                checking_player_inputs = False
                 break
             input_val = str(input_val).strip().capitalize()
             
@@ -383,7 +397,7 @@ def take_input():
             input_suit = input("Please enter the suit of the card: ")
             if check_input_for_stop(input_suit):
                 players = [player for player in players if player.get("name") != input_name]
-                checkinginputs = False
+                checking_player_inputs = False
                 break
             input_suit = str(input_suit).strip().capitalize()
             if input_suit in suits_map:
@@ -392,25 +406,112 @@ def take_input():
                 print("Incorrect card suit inputted!")
                 continue
             # Add card to correct player
-            player = next((p for p in players if p["name"] == input_name), None)
-            if player:
-                player["hand"].append({"val": input_val, "suit": input_suit})
-                cards_in_hand += 1
+            card = {"val": input_val, "suit": input_suit}
+            if card not in get_remaining_cards(players, board, True):
+                player = next((p for p in players if p["name"] == input_name), None)
+                if player:
+                    player["hand"].append({"val": input_val, "suit": input_suit})
+                    cards_in_hand += 1
+                else:
+                    print(f"Player {input_name} not found!")
+                    continue
             else:
-                print(f"Player {input_name} not found!")
+                print("Card already in use!")
                 continue
-        print("Now add cards to the board, press enter or type stop when finished")
-        making_board = True
-        while making_board:
-            input_val = input("Please enter a card value: ")
-    return players
 
+
+    
+    print("Now add cards to the board, press enter or type stop when finished")
+    checking_board_inputs = True
+    while checking_board_inputs:
+        input_val = input("Please enter a card value: ")
+        if check_input_for_stop(input_val):
+            checking_board_inputs = False
+            break
+        input_val = str(input_val).strip().capitalize()
+        if input_val in card_value_map:
+            input_val = card_value_map[input_val]
+        else:
+            print("Incorrect card value inputted!")
+            continue
+        input_suit = input("Please enter the suit of the card: ")
+
+        if check_input_for_stop(input_suit):
+                checking_board_inputs = False
+                break
+        input_suit = str(input_suit).strip().capitalize()
+        if input_suit in suits_map:
+            input_suit = suits_map[input_suit]
+        else:
+            print("Incorrect card suit inputted!")
+            continue
+        card = {"val": input_val, "suit": input_suit}
+        if card not in get_remaining_cards(players, board, True):
+            board.append(card)
+        else:
+            print("Card already in use!")
+            continue
+    return players, board
+
+def debug_hand_frequencies(players, board, numiterations):
+    # Initialize a dictionary to store hand counts for each player
+    hand_count_per_player = [{hand: 0 for hand in hands_ranking_strings} for _ in players]
+    total_count_per_player = [0] * len(players)
+
+    for _ in range(numiterations):
+        final_hands = create_final_hands(players, board)
+        for idx, hand in enumerate(final_hands):
+            for i, hand_check in enumerate(hands_ranking):
+                if hand_check(hand) is not None:  # If this hand is made
+                    hand_count_per_player[idx][hands_ranking_strings[i]] += 1
+                    total_count_per_player[idx] += 1
+                    break  # Only count the best hand, then break
+
+    # Now calculate the percentage for each hand for each player
+    percentages_per_player = []
+    for idx, hand_count in enumerate(hand_count_per_player):
+        total_count = total_count_per_player[idx]
+        if total_count == 0:
+            percentages = {hand: 0 for hand in hands_ranking_strings}  # Avoid division by zero
+        else:
+            percentages = {hand: (count / total_count) * 100 for hand, count in hand_count.items()}
+
+        # Ensure the percentages sum to 100 by adjusting for floating-point imprecision
+        total_percentage = sum(percentages.values())
+        if total_percentage != 100.0:
+            adjustment = 100.0 - total_percentage
+            most_common_hand = max(percentages, key=percentages.get)
+            percentages[most_common_hand] += adjustment
+
+        percentages_per_player.append(percentages)
+
+    # Print the results
+    for idx, percentages in enumerate(percentages_per_player):
+        player_name = players[idx]["name"]
+        print(f"{player_name} hand frequency percentages:")
+        for hand, percentage in percentages.items():
+            print(f"{hand}: {percentage:.2f}%")
+        print("\n")
+    
+    return percentages_per_player
+
+
+def test_players_board():
+    name1 = "You"
+    name2 = "Others"
+    hand1 = [{"val": 14, "suit": "H"}, {"val": 11, "suit": "S"}]
+    hand2 = [{"val": 4, "suit": "S"}, {"val": 4, "suit": "C"}]
+    board = [{"val": 13, "suit": "C"}, {"val": 10, "suit": "C"}, {"val": 14, "suit": "C"}]
+    players = [{"name": name1, "hand": hand1}, {"name": name2, "hand": hand2}]
+    return players, board
 
 def main():
-    players = take_input()
+    players, board = take_input()
+    # players, board = test_players_board()
     print(players)
-    results_list = calculate_equity(players, numiterations)
+    results_list = calculate_equity(players, board, numiterations)
     print(display_results(players, results_list))
+    # print(debug_hand_frequencies(players, board, numiterations))
 
 if __name__ == "__main__":
     main()

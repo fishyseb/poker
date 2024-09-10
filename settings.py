@@ -8,5 +8,8 @@ numsuits = 4
 cardspersuit = (maxval - minval) + 1
 numcardsinhand = 7
 
-numiterations = 30000
+numiterations = 100000
+
+# run all tests with python -m unittest discover -s tests
+
 
