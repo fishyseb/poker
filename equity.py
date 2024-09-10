@@ -1,16 +1,7 @@
 from random import randint, shuffle
 from hands import *
 from copy import deepcopy
-suits = 'SHDC'
-minval = 2
-maxval = 14
-cardvals = range(minval, maxval + 1)
-numcards = 52
-
-numsuits = 4
-cardspersuit = (maxval - minval) + 1
-numcardsinhand = 7
-
+from settings import *
 
 
 def create_deck():
@@ -21,11 +12,11 @@ def create_deck():
 
 deck = create_deck()
 
-# cards = [deck.pop(randint(0, len(deck) - 1)) for _ in range(numcardsinhand)] # creates random hands for testing
 
-# def getval(card):
-#     return card['val'] # function to enable the cards to be sorted by value
-# cards.sort(key = getval, reverse = True) # sorts cards by value to make checking for hands much easier
+
+def getval(card):
+    return card['val'] # function to enable the cards to be sorted by value
+
 
 
 def get_vals(cards):
@@ -400,7 +391,13 @@ def take_input():
                 print(f"Player {input_name} not found!")
                 continue
     return players
-players = take_input()
-print(players)
-results_list = calculate_equity(players, numiterations)
-print(display_results(players, results_list))
+
+
+def main():
+    players = take_input()
+    print(players)
+    results_list = calculate_equity(players, numiterations)
+    print(display_results(players, results_list))
+
+if __name__ == "__equity__":
+    main()
