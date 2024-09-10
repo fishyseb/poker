@@ -7,3 +7,6 @@ numcards = 52
 numsuits = 4
 cardspersuit = (maxval - minval) + 1
 numcardsinhand = 7
+
+numiterations = 30000
+

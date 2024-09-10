@@ -169,18 +169,18 @@ def royal_flush(cards = placeholder_hand):
         return 14
 # print(f"royal flush: {royal_flush(cards)}")
 
-
-
 hands_ranking_strings = ["royal_flush", "straight_flush", "quads", "full_house", "flush", "straight", "trips", "twopair", "pair", "highcard"]
 
 hands_ranking = [royal_flush, straight_flush, quads, full_house, flush, straight, trips, twopair, pair, highcard]
+
+
 
 def get_hand_ranking(cards):
     for hand in hands_ranking:
         if hand(cards) is not None:
             return hands_ranking.index(hand)
 
-players = [{"name": "Seb", "hand": Ace_King_Hearts}, {"name": "Dom", "hand": Black_Queens}]
+# players = [{"name": "Seb", "hand": Ace_King_Hearts}, {"name": "Dom", "hand": Black_Queens}]
 
 def get_winners(players, return_idx = False, return_names = True):
     hands = [person["hand"] for person in players]
@@ -234,7 +234,7 @@ def create_winners(players):
                 winners.append(person["name"])
     return winners
 
-def print_result(winners):
+def print_result(players, winners):
     hands = [person["hand"] for person in players]
     if len(winners) > 1:
         print("Chop between ", end="")
@@ -275,7 +275,7 @@ def get_remaining_cards(players, board_cards):
 
 
 
-def create_final_hands(final_board_cards):
+def create_final_hands(players, final_board_cards):
     final_hands = deepcopy(players)
     for player in final_hands:
         for card in final_board_cards:
@@ -283,7 +283,7 @@ def create_final_hands(final_board_cards):
     return final_hands
     
         
-numiterations = 30000
+
 
 def calculate_equity(players, numiterations):
     # Work out how many more cards are needed to add to the board
@@ -292,9 +292,10 @@ def calculate_equity(players, numiterations):
     if boardlen < 5:
         neededcards = 5 - boardlen
     # Check if initial board is valid
-    # if neededcards != 1 and 2 and 5:
-    #     print("invalid board")
-    #     exit()
+    acceptedable_needed = [1, 2, 5]
+    if neededcards not in acceptedable_needed:
+        print("invalid board")
+        exit()
 
     remaining_deck = get_remaining_cards(players, board_cards)
     winners_list = []
@@ -306,7 +307,7 @@ def calculate_equity(players, numiterations):
         final_board_cards = deepcopy(board_cards)
         for _ in range(neededcards):
             final_board_cards.append(remaining_deck.pop(0))
-        final_hands = create_final_hands(final_board_cards)
+        final_hands = create_final_hands(players, final_board_cards)
         winner = get_winners(final_hands)
         winners_list.append(winner)
     results_list = []
@@ -329,13 +330,10 @@ def display_results(players, results_list):
     chop_equity = f"chop = {round(chop_equity * 100, 2)}%"
     return equities, chop_equity
 
-
-
-
-
-# def get_hands():
-#     print("Please enter the number of players")
-
+def check_input_for_stop(input):
+    """Returns True if player wants to stop inputs"""
+    if input.strip().lower() == "stop" or input.strip().lower() == "":
+        return True
 
 def take_input():
     card_value_map = {
@@ -347,18 +345,21 @@ def take_input():
 }
 
     suits_map = {
-    "S": "S", "Spades": "S", 
-    "H": "H", "Hearts": "H",
-    "D": "D", "Diamonds": "D",
-    "C": "C", "Clubs": "C"}
+    "S": "S", "Spades": "S", "Spade": "S", 
+    "H": "H", "Hearts": "H", "Heart": "H",
+    "D": "D", "Diamonds": "D", "Diamond": "D",
+    "C": "C", "Clubs": "C", "Club": "C"
+    }
+    
+
     checkinginputs = True
     players = []
     cards_per_hand = 2
     while checkinginputs:
         cards_in_hand = 0
-        print("type stop at any time when you have finished")
+        print("Type stop or press enter when you have finished!")
         input_name = str(input("Please enter player name: "))
-        if input_name.strip().lower() == "stop":
+        if check_input_for_stop(input_name):
             break
         for player in players:
             if player["name"] == input_name:
@@ -367,6 +368,10 @@ def take_input():
         players.append({"name": input_name, "hand": []})
         while cards_in_hand < cards_per_hand:
             input_val = input("Please enter a card value: ")
+            if check_input_for_stop(input_val):
+                players = [player for player in players if player.get("name") != input_name]
+                checkinginputs = False
+                break
             input_val = str(input_val).strip().capitalize()
             
             # Get the corresponding card value from the dictionary
@@ -376,6 +381,10 @@ def take_input():
                 print("Incorrect card value inputted!")
                 continue
             input_suit = input("Please enter the suit of the card: ")
+            if check_input_for_stop(input_suit):
+                players = [player for player in players if player.get("name") != input_name]
+                checkinginputs = False
+                break
             input_suit = str(input_suit).strip().capitalize()
             if input_suit in suits_map:
                 input_suit = suits_map[input_suit]
@@ -390,6 +399,10 @@ def take_input():
             else:
                 print(f"Player {input_name} not found!")
                 continue
+        print("Now add cards to the board, press enter or type stop when finished")
+        making_board = True
+        while making_board:
+            input_val = input("Please enter a card value: ")
     return players
 
 
@@ -399,5 +412,5 @@ def main():
     results_list = calculate_equity(players, numiterations)
     print(display_results(players, results_list))
 
-if __name__ == "__equity__":
+if __name__ == "__main__":
     main()
