@@ -332,16 +332,76 @@ def calculate_equity(players, board, numiterations):
             results_list.append(None)
     return results_list
 
-def display_results(players, results_list):
+def display_results(players, board, results_list):
+    card_value_map_to_str = {
+        "2": "Two", "Two": "Two", 
+        "3": "Three", "Three": "Three", 
+        "4": "Four", "Four": "Four", 
+        "5": "Five", "Five": "Five", 
+        "6": "Six", "Six": "Six", 
+        "7": "Seven", "Seven": "Seven", 
+        "8": "Eight", "Eight": "Eight", 
+        "9": "Nine", "Nine": "Nine", 
+        "10": "Ten", "Ten": "Ten", 
+        "11": "Jack", "J": "Jack", "Jack": "Jack", 
+        "12": "Queen", "Q": "Queen", "Queen": "Queen", 
+        "13": "King", "K": "King", "King": "King", 
+        "14": "Ace", "A": "Ace", "Ace": "Ace", "1": "Ace"
+    }
+
+    suits_map_to_str = {
+        "S": "Spades", "Spades": "Spades", "Spade": "Spades", 
+        "H": "Hearts", "Hearts": "Hearts", "Heart": "Hearts", 
+        "D": "Diamonds", "Diamonds": "Diamonds", "Diamond": "Diamonds", 
+        "C": "Clubs", "Clubs": "Clubs", "Club": "Clubs"
+    }
+
     names = [player["name"] for player in players]
     equities = []
     for name in names:
         count = results_list.count(name)
         equity = count / numiterations
         equities.append({"name": name, "equity": f"{round(equity * 100, 2)}%"})
+    
     chop_equity = results_list.count(None) / numiterations
-    chop_equity = f"chop = {round(chop_equity * 100, 2)}%"
-    return equities, chop_equity
+    chop_equity = f"{round(chop_equity * 100, 2)}%"
+    if len(board) != 0:
+        print("The board contains the ", end = "")
+        for idx in range(len(board)):
+            card_value = board[idx]['val']
+            card_suit = board[idx]['suit']
+            
+            print(f"{card_value_map_to_str[str(card_value)]} of {suits_map_to_str[card_suit]}", end = "")
+            if idx == len(board) - 2:
+                print(", and the ", end = "")
+            elif idx == len(board) - 1:
+                print(".")
+            else:
+                print(", ", end = "")
+    else:
+        print("On an empty board: ")
+
+    for idx in range(len(players)):
+        print(f"{players[idx]['name']} has {equities[idx]['equity']} equity with the ", end="")
+        
+
+        for card in range(hole_cards_per_hand):
+            card_value = players[idx]['hand'][card]['val']
+            card_suit = players[idx]['hand'][card]['suit']
+            
+            print(f"{card_value_map_to_str[str(card_value)]} of {suits_map_to_str[card_suit]}", end = "")
+            
+            if card == hole_cards_per_hand - 2:
+                print(", and the ", end = "")
+            elif card == hole_cards_per_hand - 1:
+                print(".")
+            else:
+                print(", ", end = "")
+
+
+    print(f"The chance of a chop is {chop_equity}.")
+    return 0
+
 
 def check_input_for_stop(input):
     """Returns True if player wants to stop inputs"""
@@ -453,48 +513,6 @@ def take_input():
             continue
     return players, board
 
-def debug_hand_frequencies(players, board, numiterations):
-    # Initialize a dictionary to store hand counts for each player
-    hand_count_per_player = [{hand: 0 for hand in hands_ranking_strings} for _ in players]
-    total_count_per_player = [0] * len(players)
-
-    for _ in range(numiterations):
-        final_hands = create_final_hands(players, board)
-        for idx, hand in enumerate(final_hands):
-            for i, hand_check in enumerate(hands_ranking):
-                if hand_check(hand) is not None:  # If this hand is made
-                    hand_count_per_player[idx][hands_ranking_strings[i]] += 1
-                    total_count_per_player[idx] += 1
-                    break  # Only count the best hand, then break
-
-    # Now calculate the percentage for each hand for each player
-    percentages_per_player = []
-    for idx, hand_count in enumerate(hand_count_per_player):
-        total_count = total_count_per_player[idx]
-        if total_count == 0:
-            percentages = {hand: 0 for hand in hands_ranking_strings}  # Avoid division by zero
-        else:
-            percentages = {hand: (count / total_count) * 100 for hand, count in hand_count.items()}
-
-        # Ensure the percentages sum to 100 by adjusting for floating-point imprecision
-        total_percentage = sum(percentages.values())
-        if total_percentage != 100.0:
-            adjustment = 100.0 - total_percentage
-            most_common_hand = max(percentages, key=percentages.get)
-            percentages[most_common_hand] += adjustment
-
-        percentages_per_player.append(percentages)
-
-    # Print the results
-    for idx, percentages in enumerate(percentages_per_player):
-        player_name = players[idx]["name"]
-        print(f"{player_name} hand frequency percentages:")
-        for hand, percentage in percentages.items():
-            print(f"{hand}: {percentage:.2f}%")
-        print("\n")
-    
-    return percentages_per_player
-
 
 def test_players_board():
     name1 = "You"
@@ -505,13 +523,15 @@ def test_players_board():
     players = [{"name": name1, "hand": hand1}, {"name": name2, "hand": hand2}]
     return players, board
 
+
+testing = False
 def main():
-    players, board = take_input()
-    # players, board = test_players_board()
-    print(players)
+    if testing:
+        players, board = test_players_board()
+    else:
+        players, board = take_input()
     results_list = calculate_equity(players, board, numiterations)
-    print(display_results(players, results_list))
-    # print(debug_hand_frequencies(players, board, numiterations))
+    display_results(players, board, results_list)
 
 if __name__ == "__main__":
     main()
