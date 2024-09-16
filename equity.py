@@ -294,22 +294,6 @@ def create_final_hands_texas(players, final_board):
     
 
 def create_final_hands_omaha(players, board):
-    """
-    Create every possible final Omaha hand for each player, which consists of:
-    - Exactly two cards from the player's hand (out of four cards)
-    - The entire 5-card community board
-    
-    Args:
-    players (list): List of players, where each player is a dictionary with a name and hand.
-                    Each player's hand contains 4 cards, each represented by a dictionary
-                    with 'val' and 'suit'.
-    board (list): List of community cards, each represented by a dictionary with 'val' and 'suit'.
-                  The board contains 5 cards.
-
-    Returns:
-    list: A list of dictionaries where each dictionary has the player's name and a list of all 
-          possible 7-card hands (combinations of two hole cards and the entire board).
-    """
 
     final_hands = []
 
@@ -580,7 +564,13 @@ def test_players_board_texas():
     return players, board
 
 def test_players_board_omaha():
-    pass
+    name1 = "You"
+    name2 = "Others"
+    hand1 = [{"val": 14, "suit": "H"}, {"val": 11, "suit": "S"}, {"val": 13, "suit": "D"}, {"val": 13, "suit": "H"}]
+    hand2 = [{"val": 4, "suit": "S"}, {"val": 4, "suit": "C"}, {"val": 4, "suit": "H"}, {"val": 2, "suit": "H"}]
+    board = [{"val": 13, "suit": "C"}, {"val": 10, "suit": "C"}, {"val": 14, "suit": "C"}, {"val": 5, "suit": "C"}]
+    players = [{"name": name1, "hand": hand1}, {"name": name2, "hand": hand2}]
+    return players, board
 
 testing = False
 def main():
