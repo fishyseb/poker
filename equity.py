@@ -2,6 +2,7 @@ from random import randint, shuffle
 from hands import *
 from copy import deepcopy
 from settings import *
+import itertools
 
 
 def create_deck():
@@ -41,8 +42,6 @@ placeholder_hand = [{'suit': 'Z', 'val': 0}, {'suit': 'Z', 'val': 0}, {'suit': '
 def highcard(cards = placeholder_hand):
     cards = sorted(cards, key=lambda card: card['val'], reverse=True)
     return cards[0]['val']
-# print(f'highcard: {highcard(cards)}')
-
 def pair(cards = placeholder_hand, kickers_needed = True):
     cards = sorted(cards, key=lambda card: card['val'], reverse=True)
     cards_vals = get_vals(cards)
@@ -54,7 +53,6 @@ def pair(cards = placeholder_hand, kickers_needed = True):
             else:
                 return [cards_vals[c], cards_vals[c]]
     return None
-# print(f'pair: {pair(cards)}')
 
 def twopair(cards = placeholder_hand, kickers_needed = True):
     cards = sorted(cards, key=lambda card: card['val'], reverse=True)
@@ -76,7 +74,6 @@ def twopair(cards = placeholder_hand, kickers_needed = True):
         return [top, top, bottom, bottom, *kickers]
     else:
         return [top, top, bottom, bottom]
-# print(f'two: {twopair(cards)}')
                 
 def trips(cards = placeholder_hand, kickers_needed = True):
     cards = sorted(cards, key=lambda card: card['val'], reverse=True)
@@ -89,7 +86,6 @@ def trips(cards = placeholder_hand, kickers_needed = True):
             else:
                 return [cards_vals[c], cards_vals[c], cards_vals[c]]
     return None
-# print(f'trips: {trips(cards)}')
 
 def straight(cards = placeholder_hand):
     cards = sorted(cards, key=lambda card: card['val'], reverse=True)
@@ -104,7 +100,6 @@ def straight(cards = placeholder_hand):
         return checkstraight(cards_vals_unique)
     
     return None
-# print(f"straight: {straight(cards)}")
 
 def flush(cards = placeholder_hand, return_all_suited = False):
     cards = sorted(cards, key=lambda card: card['val'], reverse=True)
@@ -124,7 +119,6 @@ def flush(cards = placeholder_hand, return_all_suited = False):
             else:
                 return suited
     return None
-# print(f"flush: {flush(cards)}")
 
 def full_house(cards = placeholder_hand):
     cards = sorted(cards, key=lambda card: card['val'], reverse=True)
@@ -138,7 +132,6 @@ def full_house(cards = placeholder_hand):
     if pairchecker is None:
         return None
     return [*tripchecker, *pairchecker]
-# print(f"full house: {full_house(cards)}")
             
 def quads(cards = placeholder_hand, kickers_needed = True):
     cards = sorted(cards, key=lambda card: card['val'], reverse=True)
@@ -151,7 +144,6 @@ def quads(cards = placeholder_hand, kickers_needed = True):
             else:
                 return [cards_vals[c] for _ in range(4)]
     return None
-# print(f"quads: {quads(cards)}")
     
 def straight_flush(cards = placeholder_hand):
     cards = sorted(cards, key=lambda card: card['val'], reverse=True)
@@ -166,7 +158,6 @@ def straight_flush(cards = placeholder_hand):
     if checkstraight(suited) is not None:
         return checkstraight(suited)
     return None
-# print(f"straight flush: {straight_flush(cards)}")
 
 def royal_flush(cards = placeholder_hand):
     cards = sorted(cards, key=lambda card: card['val'], reverse=True)
@@ -177,7 +168,6 @@ def royal_flush(cards = placeholder_hand):
         return None
     else:
         return 14
-# print(f"royal flush: {royal_flush(cards)}")
 
 hands_ranking_strings = ["royal_flush", "straight_flush", "quads", "full_house", "flush", "straight", "trips", "twopair", "pair", "highcard"]
 
@@ -192,10 +182,15 @@ def get_hand_ranking(cards):
 
 # players = [{"name": "Seb", "hand": Ace_King_Hearts}, {"name": "Dom", "hand": Black_Queens}]
 
-def get_winners(players, return_idx = False, return_names = True):
+def get_winners(players, return_idx=False, return_names=True):
+    # if num_hole_cards == 2:
+    #     hands = [person["hand"] for person in players]
+    # elif num_hole_cards == 4:
+    #     hands = [hand for player in players for hand in player["hands"]]
+    #     print(hands)
     hands = [person["hand"] for person in players]
-    lowest_score = 100
-    winners_hand = None
+    lowest_score = float('inf')
+    winners_hand = []   
     for hand in hands:
         score = get_hand_ranking(hand)
         # Check if hand ranking is worse, if so continue
@@ -205,7 +200,6 @@ def get_winners(players, return_idx = False, return_names = True):
         elif score < lowest_score:
             lowest_score = score
             winners_hand = [hand]
-
         else:
             # Gets the hand type to compare, e.g. quads
             hand_type = hands_ranking[lowest_score]
@@ -214,21 +208,24 @@ def get_winners(players, return_idx = False, return_names = True):
             # Checks if hands are identical, if so adds another winner meaning chop
             if new_hand_in_play == old_hand_in_play:
                 winners_hand.append(hand)
-            else:
-                for _ in range(len(hand) - 1):
-                    if new_hand_in_play > old_hand_in_play:
-                        winners_hand = [hand]
-                    if new_hand_in_play < old_hand_in_play:
-                        break
-
+            elif new_hand_in_play > old_hand_in_play:
+                winners_hand = [hand]
+    
     if return_idx:
         return lowest_score
 
     if return_names:
-        winner_names = [person["name"] for person in players if person["hand"] in winners_hand]
+        if num_hole_cards == 2:
+            winner_names = [person["name"] for person in players if person["hand"] in winners_hand]
+        elif num_hole_cards == 4:
+            winner_names = []
+            for player in players:
+                if (player["hand"] in winners_hand and player["name"] not in winner_names):
+                    winner_names.append(player["name"] )
         return winner_names
 
     return winners_hand
+
 
 
 
@@ -288,17 +285,54 @@ def get_remaining_cards(players, board, return_used=False):
 
 
 
-def create_final_hands(players, final_board):
+def create_final_hands_texas(players, final_board):
     final_hands = deepcopy(players)
     for player in final_hands:
         for card in final_board:
             player["hand"].append(card)
     return final_hands
     
+
+def create_final_hands_omaha(players, board):
+    """
+    Create every possible final Omaha hand for each player, which consists of:
+    - Exactly two cards from the player's hand (out of four cards)
+    - The entire 5-card community board
+    
+    Args:
+    players (list): List of players, where each player is a dictionary with a name and hand.
+                    Each player's hand contains 4 cards, each represented by a dictionary
+                    with 'val' and 'suit'.
+    board (list): List of community cards, each represented by a dictionary with 'val' and 'suit'.
+                  The board contains 5 cards.
+
+    Returns:
+    list: A list of dictionaries where each dictionary has the player's name and a list of all 
+          possible 7-card hands (combinations of two hole cards and the entire board).
+    """
+
+    final_hands = []
+
+    # For each player
+    for player in players:
+        player_name = player["name"]
+        player_hand = player["hand"]
+
+        # Get all combinations of 2 cards from the player's 4-card hand
+        player_combinations = list(itertools.combinations(player_hand, 2))
+        board_combinations = list(itertools.combinations(board, 3))
+
+        for hole_cards in player_combinations:
+            for board_combination in board_combinations:
+                final_hands.append({"name": player_name, "hand": list(hole_cards) + list(board_combination)})
+
         
+    
+    return final_hands
 
 
 def calculate_equity(players, board, numiterations):
+    global num_hole_cards
     # Work out how many more cards are needed to add to the board
     boardlen = len(board)
     neededcards = 0
@@ -320,7 +354,11 @@ def calculate_equity(players, board, numiterations):
         final_board = deepcopy(board)
         for _ in range(neededcards):
             final_board.append(remaining_deck.pop(0))
-        final_hands = create_final_hands(players, final_board)
+        if num_hole_cards == 2:
+            final_hands = create_final_hands_texas(players, final_board)
+        else:
+            final_hands = create_final_hands_omaha(players, final_board)
+            
         winner = get_winners(final_hands)
         winners_list.append(winner)
     results_list = []
@@ -385,15 +423,15 @@ def display_results(players, board, results_list):
         print(f"{players[idx]['name']} has {equities[idx]['equity']} equity with the ", end="")
         
 
-        for card in range(hole_cards_per_hand):
+        for card in range(num_hole_cards):
             card_value = players[idx]['hand'][card]['val']
             card_suit = players[idx]['hand'][card]['suit']
             
             print(f"{card_value_map_to_str[str(card_value)]} of {suits_map_to_str[card_suit]}", end = "")
             
-            if card == hole_cards_per_hand - 2:
+            if card == num_hole_cards - 2:
                 print(", and the ", end = "")
-            elif card == hole_cards_per_hand - 1:
+            elif card == num_hole_cards - 1:
                 print(".")
             else:
                 print(", ", end = "")
@@ -407,8 +445,11 @@ def check_input_for_stop(input):
     """Returns True if player wants to stop inputs"""
     if input.strip().lower() == "stop" or input.strip().lower() == "":
         return True
+    
 
 def take_input():
+    global num_hole_cards
+    global numiterations
     card_value_map = {
     "2": 2, "Two": 2, "3": 3, "Three": 3, "4": 4, "Four": 4, "5": 5, "Five": 5, "6": 6, "Six": 6, "7": 7, "Seven": 7, "8": 8, "Eight": 8, "9": 9, "Nine": 9, "10": 10, "Ten": 10,
     "11": 11, "J": 11, "Jack": 11,
@@ -428,7 +469,22 @@ def take_input():
     checking_player_inputs = True
     players = []
     board = []
-    cards_per_hand = 2
+
+    checking_game = True
+    while checking_game:
+        game = str(input((f"Welcome to the poker equity calculator, type \"Texas\" or hit Enter for Texas Hold'em or \"Omaha\" for Omaha:\n")))
+        if game.strip().lower() == "texas" or game == "":
+            num_hole_cards = 2
+            numiterations = 20000
+            print("Texas Hold'em selected")
+            break
+        elif game.strip().lower() == "omaha":
+            num_hole_cards = 4
+            numiterations = 5000
+            print("Omaha selected")
+            break
+        else:
+            print("Incorrect game mode! Please try again.")
     while checking_player_inputs:
         cards_in_hand = 0
         print("Type stop or press enter when you have finished!")
@@ -440,7 +496,7 @@ def take_input():
                 print("Name already in use!")
                 continue
         players.append({"name": input_name, "hand": []})
-        while cards_in_hand < cards_per_hand:
+        while cards_in_hand < num_hole_cards:
             input_val = input("Please enter a card value: ")
             if check_input_for_stop(input_val):
                 players = [player for player in players if player.get("name") != input_name]
@@ -514,7 +570,7 @@ def take_input():
     return players, board
 
 
-def test_players_board():
+def test_players_board_texas():
     name1 = "You"
     name2 = "Others"
     hand1 = [{"val": 14, "suit": "H"}, {"val": 11, "suit": "S"}]
@@ -523,11 +579,16 @@ def test_players_board():
     players = [{"name": name1, "hand": hand1}, {"name": name2, "hand": hand2}]
     return players, board
 
+def test_players_board_omaha():
+    pass
 
 testing = False
 def main():
     if testing:
-        players, board = test_players_board()
+        if num_hole_cards == 2:
+            players, board = test_players_board_texas()
+        elif num_hole_cards == 4:
+            players, board = test_players_board_omaha()
     else:
         players, board = take_input()
     results_list = calculate_equity(players, board, numiterations)

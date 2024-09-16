@@ -7,9 +7,8 @@ numcards = 52
 numsuits = 4
 cardspersuit = (maxval - minval) + 1
 
-hole_cards_per_hand = 2
-
-numiterations = 10000
+num_hole_cards = None
+numiterations = None
 
 # run all tests with python -m unittest discover -s tests
 
